@@ -1,15 +1,11 @@
+import select from './select'
 import * as HID from 'node-hid'
 import * as WebSocket from 'ws'
 const { WebSocketServer } = WebSocket
 
-const stadia_serial = '9C030YCAC6LK66'
-const frsky_serial = '5D8443913534'
+let device_serial = ''
 
 const wss = new WebSocketServer({ port: 5000 })
-
-wss.on('listening', () => {
-  console.log('websocket server listening')
-})
 
 let connection = true
 
@@ -28,9 +24,9 @@ const createInitializer = (serial) => {
   return init_controller(serial)
 }
 
-const createGamepad = () => {
+const createGamepad = (device_serial) => {
   try {
-    const Gamepad = createInitializer(stadia_serial)
+    const Gamepad = createInitializer(device_serial)
     console.log('gamepad connected')
     connection = true
 
@@ -43,7 +39,7 @@ const createGamepad = () => {
     })
 
     Gamepad.on('error', (error) => {
-      console.log(error)
+      // console.log(error)
       console.log('gamepad lost connection, closing...')
       connection = false
       Gamepad.close()
@@ -56,10 +52,16 @@ const createGamepad = () => {
   }
 }
 
-const loop = setInterval(() => !connection && createGamepad(), 3000)
+const loop = setInterval(() => !connection && createGamepad(device_serial), 3000)
 
-// startup
-createGamepad()
+select({
+  question: 'select your device',
+  options: HID.devices().reduce((ac, {product}) => product === undefined || ac.includes(product) ? ac : [...ac, product],[]),
+}).then(productName => {
+  const devices = HID.devices()
+  device_serial = devices.find(({product}) => product===productName).serialNumber
+  createGamepad(device_serial)
+})
 
 process.on('SIGINT', () => {
   clearInterval(loop)
