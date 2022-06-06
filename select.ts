@@ -1,8 +1,14 @@
 import { cursorTo } from 'node:readline'
-const l = console.log
-const { stdin, stdout } = process
 
-const default_options = {
+export type Options = {
+  question: string
+  options: string[]
+  color?: string
+}
+type Select = (opts: Options, callback: Function) => void
+
+const { stdin, stdout } = process
+const default_options: Options = {
   question: '',
   options: [],
   color: 'blue',
@@ -21,29 +27,16 @@ const colorfn = (str, colorName = 'yellow') => {
   const stop = `\x1b[${colors.reset}m\x1b[0m`
   return start + str + stop
 }
-
-const hideCursor = () => {
-  stdout.write('\x1B[?25l')
+const cursor = {
+  show: '\x1B[?25h',
+  hide: '\x1B[?25l',
 }
 
-const showCursor = () => {
-  stdout.write('\x1B[?25h')
-}
-
-type Options = {
-  question: string
-  options: string[]
-  color?: string
-}
-
-type Select = (opts: Options) => Promise<any>
-const select: Select = async (opts = default_options) => {
-  const answer = new Promise((resolve,reject) => {
-
+const select: Select = async (opts = default_options, callback) => {
+  try {
     let { question, options, color } = opts
-    if (!options.length) {
-      reject('no options list')
-    }
+    if (!question.length) throw new Error("There must be a 'question'")
+    if (!options.length) throw new Error("There must be 'options'")
     let selected = 0
   
     const pn = (c) => {
@@ -58,8 +51,6 @@ const select: Select = async (opts = default_options) => {
           return upArrow()
         case '\u001b[B':
           return downArrow()
-        default:
-        // not found
       }
     }
     const list_opts = () => {
@@ -75,16 +66,13 @@ const select: Select = async (opts = default_options) => {
       stdin.removeListener('data', pn)
       stdin.setRawMode(false)
       stdin.pause()
-      showCursor()
+      stdout.write(cursor.show)
     }
   
     const enter = () => {
-      stdin.removeListener('data', pn)
-      stdin.setRawMode(false)
-      stdin.pause()
-      showCursor()
+      ctrlc()
       console.clear()
-      resolve(options[selected])
+      callback(options[selected])
     }
   
     const upArrow = () => {
@@ -98,16 +86,16 @@ const select: Select = async (opts = default_options) => {
   
     console.clear()
     stdout.write(question + '\n')
-  
     list_opts()
   
     stdin.setRawMode(true)
     stdin.resume()
     stdin.setEncoding('utf-8')
-    hideCursor()
+    stdout.write(cursor.hide)
     stdin.on('data', pn)
-  })
-  return await answer
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 export default select
