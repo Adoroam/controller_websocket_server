@@ -8,7 +8,7 @@ const wss = new WebSocketServer({ port: 5000 })
 let device_serial = ''
 let connection = true
 
-const createInitializer = (serial) => {
+const createInitializer = (serial: string) => {
   const devices = HID.devices()
   const device_by_serial = serial =>
     devices.find(({ serialNumber }) => serialNumber === serial) as HID.Device
@@ -49,7 +49,7 @@ const loop = setInterval(() => !connection && createGamepad(device_serial), 3000
 
 const select_callback = (prod:string) => {
   const devices = HID.devices()
-  device_serial = devices.find(({ product }) => product === prod)?.serialNumber || ''
+  device_serial = devices.find(({ product }) => product === prod)?.serialNumber
   createGamepad(device_serial)
 }
 // @ts-ignore
