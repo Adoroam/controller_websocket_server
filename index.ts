@@ -1,4 +1,4 @@
-import select from './select'
+import select, { Options } from '@utility_belt/cli_select'
 import * as HID from 'node-hid'
 import * as WebSocket from 'ws'
 
@@ -11,7 +11,7 @@ let connection = true
 const createInitializer = (serial) => {
   const devices = HID.devices()
   const device_by_serial = serial =>
-    devices.find(({ serialNumber }) => serialNumber === serial)
+    devices.find(({ serialNumber }) => serialNumber === serial) as HID.Device
   const init_controller = serial => {
     const { vendorId, productId } = device_by_serial(serial)
     return new HID.HID(vendorId, productId)
@@ -27,7 +27,6 @@ const createGamepad = (device_serial) => {
 
     Gamepad.on('data', (buffer: Buffer) => {
       const arr = Array.from(buffer)
-      // console.log(arr.join(','))
       wss.clients.forEach(client => {
         client.readyState === WebSocket.OPEN && client.send(arr.join(','))
       })
@@ -48,16 +47,22 @@ const createGamepad = (device_serial) => {
 
 const loop = setInterval(() => !connection && createGamepad(device_serial), 3000)
 
-const select_handler = (prod:string) => {
+const select_callback = (prod:string) => {
   const devices = HID.devices()
-  device_serial = devices.find(({ product }) => product === prod).serialNumber
+  device_serial = devices.find(({ product }) => product === prod)?.serialNumber || ''
   createGamepad(device_serial)
 }
-select({
+// @ts-ignore
+const option_list = () => HID.devices().reduce((ac, { product }) =>
+// @ts-ignore
+  product === undefined || ac.includes(product) ? ac : [...ac, product], []) as string[]
+
+const opts: Options = {
   question: 'select your device',
-  options: HID.devices().reduce((ac, {product}) =>
-    product === undefined || ac.includes(product) ? ac : [...ac, product],[]),
-}, select_handler)
+  options: option_list()
+}
+
+select(opts, select_callback)
 
 process.on('SIGINT', () => {
   clearInterval(loop)

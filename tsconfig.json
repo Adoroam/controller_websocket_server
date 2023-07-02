@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "lib": ["ESNext", "ES2019.Object"],
+    "declaration": true,
+    "types": ["node"],
+    "outDir": "./dist",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+  },
+  "include": ["./src/**/*"],
+  "exclude": ["node_modules", "dist", "./src/*test.ts"]
+}
