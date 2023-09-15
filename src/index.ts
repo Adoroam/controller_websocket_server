@@ -52,9 +52,8 @@ const select_callback = (prod:string) => {
   device_serial = devices.find(({ product }) => product === prod)?.serialNumber
   createGamepad(device_serial)
 }
-// @ts-ignore
+
 const option_list = () => HID.devices().reduce((ac, { product }) =>
-// @ts-ignore
   product === undefined || ac.includes(product) ? ac : [...ac, product], []) as string[]
 
 const opts: Options = {
